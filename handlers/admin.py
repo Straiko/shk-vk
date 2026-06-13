@@ -82,20 +82,11 @@ def register(bot: Bot) -> None:
 
     @bot.on.raw_event("message_event")
     async def handle_admin_callbacks(event):
-        payload = event.get("payload", {})
+        obj = event.get("object", {})
+        payload = obj.get("payload", {})
         cmd = payload.get("cmd", "")
-        user_id = event.get("user_id", 0)
-        peer_id = event.get("peer_id", 0)
-        event_id = event.get("event_id", "")
-
-        try:
-            await bot.api.request("messages.sendMessageEvent", {
-                "user_id": user_id,
-                "peer_id": peer_id,
-                "event_id": event_id,
-            })
-        except Exception:
-            pass
+        user_id = obj.get("user_id", 0)
+        peer_id = obj.get("peer_id", 0)
 
         if not cmd.startswith("admin_"):
             return
