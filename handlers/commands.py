@@ -21,7 +21,7 @@ HELP_TEXT = (
     "/version — версия бота\n"
     "/help — эта справка\n\n"
     "📱 Также доступен в:\n"
-    "Telegram: @Ozonbratik_bot\n"
+    "Telegram: https://t.me/Ozonbratik_bot\n"
     "MAX: https://max.ru/id771692758487_bot"
 )
 
