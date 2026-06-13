@@ -29,4 +29,4 @@ photo.register(bot)
 barcode.register(bot)
 
 if __name__ == "__main__":
-    bot.run_forever()
+    bot.run()
