@@ -23,8 +23,8 @@ if not BOT_TOKEN:
 bot = Bot(token=BOT_TOKEN)
 
 commands.register(bot)
-photo.register(bot)
 barcode.register(bot)
+photo.register(bot)
 
 if __name__ == "__main__":
     logging.info("Запуск VK бота на Long Poll")
