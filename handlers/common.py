@@ -52,6 +52,7 @@ def format_reply(codes: list[str], chosen: str) -> str:
 
 async def process_photo(bot: Bot, message: Message, photo_data) -> None:
     user_id = message.from_id
+    logger.info("Photo scan request from user %d", user_id)
     await message.answer("Обрабатываю фото...")
 
     photo_bytes = await download_photo_from_vk(bot, photo_data)

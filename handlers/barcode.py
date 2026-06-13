@@ -64,6 +64,7 @@ def register(bot: Bot) -> None:
             return
 
         user_id = message.from_id
+        logger.info("Barcode request from user %d: %s", user_id, text_to_encode)
 
         if not all(c.isascii() and (c.isalnum() or c in "-_") for c in text_to_encode):
             await message.answer(
