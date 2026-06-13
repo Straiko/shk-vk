@@ -8,6 +8,7 @@ import barcode as barcode_lib
 from barcode.writer import ImageWriter
 
 from utils.file_manager import temp_image
+from utils.db import log_activity
 from handlers.common import get_photo_data, process_photo
 
 logger = logging.getLogger(__name__)
@@ -74,5 +75,6 @@ def register(bot: Bot) -> None:
             return
 
         await send_barcode_image(bot, user_id, text_to_encode)
+        log_activity(user_id, None, None, None, "barcode_generated", text_to_encode)
 
     logger.info("Обработчик генерации штрих-кодов VK зарегистрирован")

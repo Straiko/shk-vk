@@ -9,6 +9,7 @@ from vkbottle.bot import Bot, Message
 from services.scanner import scan_barcodes
 from services.ocr import scan_text_ocr
 from utils.file_manager import temp_image
+from utils.db import log_activity
 from config import OCR_API_KEY
 
 logger = logging.getLogger(__name__)
@@ -75,6 +76,7 @@ async def process_photo(bot: Bot, message: Message, photo_data) -> None:
                     "Штрих-коды или текст не найдены на фото.\n"
                     "Попробуй сделать фото чётче."
                 )
+                log_activity(user_id, None, None, None, "photo_scan_empty")
                 return
 
             chosen = max(codes, key=len)
@@ -82,6 +84,8 @@ async def process_photo(bot: Bot, message: Message, photo_data) -> None:
 
             from handlers.barcode import send_barcode_image
             await send_barcode_image(bot, user_id, chosen)
+
+            log_activity(user_id, None, None, None, "photo_scan", chosen)
 
         except Exception:
             await message.answer("Ошибка при обработке фото.")
