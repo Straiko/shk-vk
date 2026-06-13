@@ -65,33 +65,33 @@ def _format_activity_list(activity: list[dict]) -> tuple[str, Keyboard]:
 
 
 async def send_activity_with_photos(bot, peer_id, activity, kb):
-    text_lines = []
-    photo_attachments = []
+    if not activity:
+        await bot.api.messages.send(
+            peer_id=peer_id,
+            message="📝 Последние действия:\n\nПусто.",
+            keyboard=kb,
+            random_id=0,
+        )
+        return
+
     for a in activity:
         time_str = a['timestamp'][11:19] if a['timestamp'] else "??:??:??"
         name = a.get('first_name') or a.get('username') or "Без имени"
         act_icon = "📷" if "photo" in (a['action'] or "") else "📝"
         details = a.get('details') or "Нет данных"
-        text_lines.append(f"{time_str} | {act_icon} {name[:12]} (#{a['id']})\n  {details}")
-        if a.get('file_id'):
-            photo_attachments.append(a['file_id'])
+        text = f"{time_str} | {act_icon} {name[:12]} (#{a['id']})\n  {details}"
 
-    text = "📝 Последние 50 действий:\n\n" + "\n\n".join(text_lines)
-    if len(text) > 4000:
-        text = text[:4000] + "\n... (обрезано)"
-
-    if photo_attachments:
-        recent_photos = photo_attachments[:5]
+        attachment = a.get('file_id') or None
         await bot.api.messages.send(
             peer_id=peer_id,
-            message="📷 Фото пользователей:",
-            attachment=",".join(recent_photos),
+            message=text,
+            attachment=attachment,
             random_id=0,
         )
 
     await bot.api.messages.send(
         peer_id=peer_id,
-        message=text,
+        message="",
         keyboard=kb,
         random_id=0,
     )
