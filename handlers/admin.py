@@ -14,6 +14,7 @@ from utils.db import (
 logger = logging.getLogger(__name__)
 
 ADMIN_USER_ID = int(os.getenv("VK_ADMIN_ID", "0"))
+broadcast_pending = False
 
 
 def is_admin(user_id: int) -> bool:
@@ -29,6 +30,8 @@ def get_admin_keyboard() -> Keyboard:
     kb.add(Callback("📝 Действия", payload={"cmd": "admin_activity"}))
     kb.row()
     kb.add(Callback("👥 Пользователи", payload={"cmd": "admin_users"}))
+    kb.add(Callback("📢 Рассылка", payload={"cmd": "admin_broadcast"}))
+    kb.row()
     kb.add(Callback("❌ Закрыть", payload={"cmd": "admin_close"}))
     return kb
 
@@ -97,6 +100,7 @@ async def send_activity_with_photos(bot, peer_id, activity, kb):
 
 def register(bot: Bot) -> None:
     init_db()
+    global broadcast_pending
 
     @bot.on.message(text="/admin")
     async def send_admin_menu(message: Message):
@@ -105,6 +109,36 @@ def register(bot: Bot) -> None:
             await message.answer("⛔ У вас нет доступа.")
             return
 
+        broadcast_pending = False
+        kb = get_admin_keyboard()
+        await message.answer(
+            "👋 Панель администратора\n\nВыберите нужный раздел:",
+            keyboard=kb,
+        )
+
+    @bot.on.message(func=lambda m: broadcast_pending and m.from_id == ADMIN_USER_ID)
+    async def handle_broadcast_text(message: Message):
+        global broadcast_pending
+        broadcast_pending = False
+        text = message.text
+        if not text:
+            await message.answer("⛔ Пустое сообщение.")
+            return
+
+        users = get_users(limit=10000)
+        sent = 0
+        for u in users:
+            try:
+                await bot.api.messages.send(
+                    user_id=u['user_id'],
+                    message=text,
+                    random_id=0,
+                )
+                sent += 1
+            except Exception:
+                pass
+
+        await message.answer(f"✅ Рассылка завершена! Отправлено: {sent} из {len(users)}")
         kb = get_admin_keyboard()
         await message.answer(
             "👋 Панель администратора\n\nВыберите нужный раздел:",
@@ -141,6 +175,16 @@ def register(bot: Bot) -> None:
                 peer_id=peer_id,
                 message="👋 Панель администратора\n\nВыберите нужный раздел:",
                 keyboard=kb,
+                random_id=0,
+            )
+            return
+
+        elif action == "broadcast":
+            global broadcast_pending
+            broadcast_pending = True
+            await bot.api.messages.send(
+                peer_id=peer_id,
+                message="📢 Отправьте текст рассылки (следующее сообщение будет разослано всем пользователям):",
                 random_id=0,
             )
             return
