@@ -27,6 +27,7 @@ HELP_TEXT = (
 def register(bot: Bot) -> None:
     @bot.on.message(text="/start")
     @bot.on.message(text="/help")
+    @bot.on.message(text="Начать")
     async def send_welcome(message: Message):
         await message.answer(HELP_TEXT)
 

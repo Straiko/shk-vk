@@ -64,6 +64,39 @@ def _format_activity_list(activity: list[dict]) -> tuple[str, Keyboard]:
     return text, kb
 
 
+async def send_activity_with_photos(bot, peer_id, activity, kb):
+    text_lines = []
+    photo_attachments = []
+    for a in activity:
+        time_str = a['timestamp'][11:19] if a['timestamp'] else "??:??:??"
+        name = a.get('first_name') or a.get('username') or "Без имени"
+        act_icon = "📷" if "photo" in (a['action'] or "") else "📝"
+        details = a.get('details') or "Нет данных"
+        text_lines.append(f"{time_str} | {act_icon} {name[:12]} (#{a['id']})\n  {details}")
+        if a.get('file_id'):
+            photo_attachments.append(a['file_id'])
+
+    text = "📝 Последние 50 действий:\n\n" + "\n\n".join(text_lines)
+    if len(text) > 4000:
+        text = text[:4000] + "\n... (обрезано)"
+
+    if photo_attachments:
+        recent_photos = photo_attachments[:5]
+        await bot.api.messages.send(
+            peer_id=peer_id,
+            message="📷 Фото пользователей:",
+            attachment=",".join(recent_photos),
+            random_id=0,
+        )
+
+    await bot.api.messages.send(
+        peer_id=peer_id,
+        message=text,
+        keyboard=kb,
+        random_id=0,
+    )
+
+
 def register(bot: Bot) -> None:
     init_db()
 
@@ -133,30 +166,20 @@ def register(bot: Bot) -> None:
 
         elif action == "activity":
             activity = get_recent_activity(50)
-            text, kb = _format_activity_list(activity)
-            await bot.api.messages.send(
-                peer_id=peer_id,
-                message=text,
-                keyboard=kb,
-                random_id=0,
-            )
+            kb = get_back_keyboard()
+            await send_activity_with_photos(bot, peer_id, activity, kb)
             return
 
         elif action == "clear_5":
             delete_last_activities(5)
             activity = get_recent_activity(50)
-            text, kb = _format_activity_list(activity)
+            kb = get_back_keyboard()
             await bot.api.messages.send(
                 peer_id=peer_id,
                 message="✅ Удалено!",
                 random_id=0,
             )
-            await bot.api.messages.send(
-                peer_id=peer_id,
-                message=text,
-                keyboard=kb,
-                random_id=0,
-            )
+            await send_activity_with_photos(bot, peer_id, activity, kb)
             return
 
         elif action == "users":

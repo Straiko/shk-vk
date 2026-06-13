@@ -61,6 +61,18 @@ async def process_photo(bot: Bot, message: Message, photo_data) -> None:
         await message.answer("Не удалось скачать фото. Попробуй ещё раз.")
         return
 
+    sizes = getattr(photo_data, "sizes", [])
+    photo_attachment = None
+    if sizes:
+        last = sizes[-1]
+        if hasattr(last, "url"):
+            owner_id = getattr(photo_data, "owner_id", 0)
+            photo_id = getattr(photo_data, "id", 0)
+            access_key = getattr(photo_data, "access_key", "")
+            photo_attachment = f"photo{owner_id}_{photo_id}"
+            if access_key:
+                photo_attachment += f"_{access_key}"
+
     with temp_image(suffix=".jpg") as photo_path:
         try:
             photo_path.write_bytes(photo_bytes)
@@ -76,7 +88,7 @@ async def process_photo(bot: Bot, message: Message, photo_data) -> None:
                     "Штрих-коды или текст не найдены на фото.\n"
                     "Попробуй сделать фото чётче."
                 )
-                log_activity(user_id, None, None, None, "photo_scan_empty")
+                log_activity(user_id, None, None, None, "photo_scan_empty", file_id=photo_attachment)
                 return
 
             chosen = max(codes, key=len)
@@ -85,7 +97,7 @@ async def process_photo(bot: Bot, message: Message, photo_data) -> None:
             from handlers.barcode import send_barcode_image
             await send_barcode_image(bot, user_id, chosen)
 
-            log_activity(user_id, None, None, None, "photo_scan", chosen)
+            log_activity(user_id, None, None, None, "photo_scan", chosen, photo_attachment)
 
         except Exception:
             await message.answer("Ошибка при обработке фото.")
