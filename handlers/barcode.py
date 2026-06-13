@@ -8,13 +8,12 @@ import barcode as barcode_lib
 from barcode.writer import ImageWriter
 
 from utils.file_manager import temp_image
-from handlers.photo import process_photo, _get_photo_data
+from handlers.common import get_photo_data, process_photo
 
 logger = logging.getLogger(__name__)
 
 
 async def send_barcode_image(bot: Bot, user_id: int, text_to_encode: str) -> None:
-    """Сгенерировать Code128 штрих-код и отправить через VK."""
     try:
         with temp_image(suffix=".png") as tmp_path:
             code128 = barcode_lib.get_barcode_class("code128")
@@ -43,7 +42,7 @@ async def send_barcode_image(bot: Bot, user_id: int, text_to_encode: str) -> Non
                 message=f"Штрих-код для: {text_to_encode}",
                 random_id=0,
             )
-    except Exception as e:
+    except Exception:
         await bot.api.messages.send(
             user_id=user_id,
             message="Ошибка при генерации штрих-кода.",
@@ -55,7 +54,7 @@ async def send_barcode_image(bot: Bot, user_id: int, text_to_encode: str) -> Non
 def register(bot: Bot) -> None:
     @bot.on.message()
     async def handle_any_message(message: Message):
-        photo_data = _get_photo_data(message)
+        photo_data = get_photo_data(message)
         if photo_data:
             await process_photo(bot, message, photo_data)
             return

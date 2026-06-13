@@ -6,7 +6,7 @@ import os
 from dotenv import load_dotenv
 from vkbottle.bot import Bot, Message
 
-from handlers import commands, photo, barcode
+from handlers import commands, barcode
 
 load_dotenv()
 
@@ -23,7 +23,6 @@ if not BOT_TOKEN:
 bot = Bot(token=BOT_TOKEN)
 
 commands.register(bot)
-photo.register(bot)
 barcode.register(bot)
 
 if __name__ == "__main__":
