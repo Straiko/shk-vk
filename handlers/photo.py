@@ -45,60 +45,55 @@ def _format_reply(codes: list[str], chosen: str) -> str:
     )
 
 
+def _get_photo_data(message: Message):
+    attachments = message.attachments or []
+    for att in attachments:
+        if hasattr(att, "type") and att.type and "photo" in str(att.type):
+            return att.photo
+    return None
+
+
+async def process_photo(bot: Bot, message: Message, photo_data) -> None:
+    user_id = message.from_id
+    await message.answer("Обрабатываю фото...")
+
+    photo_bytes = await download_photo_from_vk(bot, photo_data)
+    if photo_bytes is None:
+        await message.answer("Не удалось скачать фото. Попробуй ещё раз.")
+        return
+
+    with temp_image(suffix=".jpg") as photo_path:
+        try:
+            photo_path.write_bytes(photo_bytes)
+            img = Image.open(photo_path)
+
+            decoded_objects = scan_barcodes(img)
+            barcode_codes = [obj.text for obj in decoded_objects]
+
+            ocr_codes = scan_text_ocr(str(photo_path), OCR_API_KEY)
+
+            codes = list(dict.fromkeys(barcode_codes + ocr_codes))
+
+            if not codes:
+                await message.answer(
+                    "Штрих-коды или текст не найдены на фото.\n"
+                    "Попробуй сделать фото чётче."
+                )
+                return
+
+            if barcode_codes:
+                chosen = max(barcode_codes, key=len)
+            else:
+                chosen = max(codes, key=len)
+
+            reply = _format_reply(codes, chosen)
+            await message.answer(reply)
+            await send_barcode_image(bot, user_id, chosen)
+
+        except Exception as e:
+            await message.answer("Ошибка при обработке фото.")
+            logger.exception("Ошибка обработки фото для user %d", user_id)
+
+
 def register(bot: Bot) -> None:
-    @bot.on.message()
-    async def handle_photo(message: Message):
-        attachments = message.attachments
-        if not attachments:
-            return
-
-        photo_data = None
-        for att in attachments:
-            if hasattr(att, "type") and att.type and "photo" in str(att.type):
-                photo_data = att.photo
-                break
-
-        if not photo_data:
-            return
-
-        user_id = message.from_id
-        await message.answer("Обрабатываю фото...")
-
-        photo_bytes = await download_photo_from_vk(bot, photo_data)
-        if photo_bytes is None:
-            await message.answer("Не удалось скачать фото. Попробуй ещё раз.")
-            return
-
-        with temp_image(suffix=".jpg") as photo_path:
-            try:
-                photo_path.write_bytes(photo_bytes)
-                img = Image.open(photo_path)
-
-                decoded_objects = scan_barcodes(img)
-                barcode_codes = [obj.text for obj in decoded_objects]
-
-                ocr_codes = scan_text_ocr(str(photo_path), OCR_API_KEY)
-
-                codes = list(dict.fromkeys(barcode_codes + ocr_codes))
-
-                if not codes:
-                    await message.answer(
-                        "Штрих-коды или текст не найдены на фото.\n"
-                        "Попробуй сделать фото чётче."
-                    )
-                    return
-
-                if barcode_codes:
-                    chosen = max(barcode_codes, key=len)
-                else:
-                    chosen = max(codes, key=len)
-
-                reply = _format_reply(codes, chosen)
-                await message.answer(reply)
-                await send_barcode_image(bot, user_id, chosen)
-
-            except Exception as e:
-                await message.answer("Ошибка при обработке фото.")
-                logger.exception("Ошибка обработки фото для user %d", user_id)
-
     logger.info("Обработчик фото VK зарегистрирован")
