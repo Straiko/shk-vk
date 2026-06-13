@@ -81,20 +81,18 @@ async def send_activity_with_photos(bot, peer_id, activity, kb):
         details = a.get('details') or "Нет данных"
         text = f"{time_str} | {act_icon} {name[:12]} (#{a['id']})\n  {details}"
 
-        attachment = a.get('file_id') or None
+        entry_kb = Keyboard(inline=True)
+        entry_kb.row()
+        if a.get('file_id'):
+            entry_kb.add(Callback("📷 Просмотр", payload={"cmd": f"admin_view_{a['id']}"}))
+        entry_kb.add(Callback("⬅️ В главное меню", payload={"cmd": "admin_main"}))
+
         await bot.api.messages.send(
             peer_id=peer_id,
             message=text,
-            attachment=attachment,
+            keyboard=entry_kb,
             random_id=0,
         )
-
-    await bot.api.messages.send(
-        peer_id=peer_id,
-        message="",
-        keyboard=kb,
-        random_id=0,
-    )
 
 
 def register(bot: Bot) -> None:
@@ -203,6 +201,24 @@ def register(bot: Bot) -> None:
                 keyboard=kb,
                 random_id=0,
             )
+            return
+
+        elif action.startswith("view_"):
+            act_id = int(action.replace("view_", ""))
+            act = get_activity_by_id(act_id)
+            if act and act.get('file_id'):
+                await bot.api.messages.send(
+                    peer_id=peer_id,
+                    message=f"📷 Фото из действия #{act_id}:",
+                    attachment=act['file_id'],
+                    random_id=0,
+                )
+            else:
+                await bot.api.messages.send(
+                    peer_id=peer_id,
+                    message="📷 Фото не найдено.",
+                    random_id=0,
+                )
             return
 
     logger.info("Обработчик админки VK зарегистрирован")
