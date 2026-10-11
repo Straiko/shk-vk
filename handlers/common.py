@@ -10,7 +10,7 @@ from services.scanner import scan_barcodes
 from services.ocr import scan_text_ocr
 from utils.file_manager import temp_image
 from utils.db import log_activity
-from config import OCR_API_KEY
+from config import OCR_API_KEY, YANDEX_API_KEY
 
 logger = logging.getLogger(__name__)
 
@@ -80,7 +80,7 @@ async def process_photo(bot: Bot, message: Message, photo_data) -> None:
 
             decoded_objects = scan_barcodes(img)
             barcode_codes = [obj.text for obj in decoded_objects]
-            ocr_codes = scan_text_ocr(str(photo_path), OCR_API_KEY)
+            ocr_codes = scan_text_ocr(str(photo_path), YANDEX_API_KEY or OCR_API_KEY)
             codes = list(dict.fromkeys(barcode_codes + ocr_codes))
 
             if not codes:

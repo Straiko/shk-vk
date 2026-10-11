@@ -16,10 +16,10 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
 
-BOT_TOKEN = os.getenv("VK_BOT_TOKEN")
+BOT_TOKEN = os.getenv("VK_BOT_TOKEN") or os.getenv("BOT_TOKEN")
 
 if not BOT_TOKEN:
-    raise RuntimeError("VK_BOT_TOKEN не задан!")
+    raise RuntimeError("VK_BOT_TOKEN или BOT_TOKEN не задан!")
 
 bot = Bot(token=BOT_TOKEN)
 
